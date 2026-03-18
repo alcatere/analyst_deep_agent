@@ -25,6 +25,11 @@ with st.sidebar:
         st.session_state.agent = get_agent(model_name=model_name)
         st.success(f"Agent updated to use {model_name}")
 
+    if st.button("🗑️ Clear Conversation"):
+        st.session_state.messages = []
+        st.success("Conversation cleared!")
+        st.rerun()
+
     st.header("📂 Upload Knowledge")
     uploaded_pdf = st.file_uploader("Upload a PDF document", type=["pdf"])
     if uploaded_pdf is not None:

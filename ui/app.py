@@ -35,35 +35,38 @@ with st.sidebar:
         st.success("Conversation cleared!")
         st.rerun()
 
+    if "processed_files" not in st.session_state:
+        st.session_state.processed_files = set()
+
     st.header("📂 Upload Knowledge")
     uploaded_pdf = st.file_uploader("Upload a PDF document", type=["pdf"])
-    if uploaded_pdf is not None:
-        if st.button("Process PDF"):
-            with st.spinner("Indexing PDF..."):
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-                    tmp.write(uploaded_pdf.getvalue())
-                    tmp_path = tmp.name
-                
-                try:
-                    docs = load_pdf(tmp_path)
-                    chunks = split_documents(docs)
-                    add_documents_to_store(chunks)
-                    st.success(f"Successfully indexed {len(chunks)} chunks from the PDF.")
-                except Exception as e:
-                    st.error(f"Error processing PDF: {e}")
-                finally:
-                    os.unlink(tmp_path)
+    if uploaded_pdf is not None and uploaded_pdf.name not in st.session_state.processed_files:
+        with st.spinner("Indexing PDF..."):
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+                tmp.write(uploaded_pdf.getvalue())
+                tmp_path = tmp.name
+            
+            try:
+                docs = load_pdf(tmp_path)
+                chunks = split_documents(docs)
+                add_documents_to_store(chunks)
+                st.session_state.processed_files.add(uploaded_pdf.name)
+                st.success(f"Successfully indexed {len(chunks)} chunks from '{uploaded_pdf.name}'.")
+            except Exception as e:
+                st.error(f"Error processing PDF: {e}")
+            finally:
+                os.unlink(tmp_path)
 
     uploaded_csv = st.file_uploader("Upload a CSV dataset", type=["csv"])
-    if uploaded_csv is not None:
-        if st.button("Process CSV"):
-            with st.spinner("Loading Dataset..."):
-                try:
-                    df = pd.read_csv(uploaded_csv)
-                    add_dataframe(uploaded_csv.name, df)
-                    st.success(f"Successfully loaded CSV '{uploaded_csv.name}' with {df.shape[0]} rows.")
-                except Exception as e:
-                    st.error(f"Error processing CSV: {e}")
+    if uploaded_csv is not None and uploaded_csv.name not in st.session_state.processed_files:
+        with st.spinner("Loading Dataset..."):
+            try:
+                df = pd.read_csv(uploaded_csv)
+                add_dataframe(uploaded_csv.name, df)
+                st.session_state.processed_files.add(uploaded_csv.name)
+                st.success(f"Successfully loaded CSV '{uploaded_csv.name}' with {df.shape[0]} rows.")
+            except Exception as e:
+                st.error(f"Error processing CSV: {e}")
 
 # Chat interface
 for message in st.session_state.messages:

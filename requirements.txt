@@ -8,3 +8,4 @@ streamlit
 pandas
 duckduckgo-search
 pypdf
+langchain-chroma

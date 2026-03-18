@@ -9,3 +9,4 @@ pandas
 duckduckgo-search
 pypdf
 langchain-chroma
+ddgs

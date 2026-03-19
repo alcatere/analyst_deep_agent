@@ -10,3 +10,4 @@ duckduckgo-search
 pypdf
 langchain-chroma
 ddgs
+watchdog

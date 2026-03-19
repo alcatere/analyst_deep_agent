@@ -68,11 +68,18 @@ with st.sidebar:
             except Exception as e:
                 st.error(f"Error processing CSV: {e}")
 
+from evaluation.metrics import evaluate_relevance
+import shutil
+
 # Chat interface
 for message in st.session_state.messages:
     role = "user" if isinstance(message, HumanMessage) else "assistant"
     with st.chat_message(role):
         st.markdown(message.content)
+        if "eval_score" in message.additional_kwargs:
+            st.caption(f"🤖 Auto-Eval Score: {message.additional_kwargs['eval_score']}/5")
+        if "image_path" in message.additional_kwargs:
+            st.image(message.additional_kwargs["image_path"])
 
 if prompt := st.chat_input("Ask me anything, or tell me to read your documents/data..."):
     st.session_state.messages.append(HumanMessage(content=prompt))
@@ -94,6 +101,29 @@ if prompt := st.chat_input("Ask me anything, or tell me to read your documents/d
                         st.info(f"🛠️ Tool Used: {tool_msg.name}")
                 
                 message_placeholder.markdown(final_response)
-                st.session_state.messages.append(AIMessage(content=final_response))
+                
+                # Setup kwargs for this message
+                kwargs = {}
+                
+                # Check for graphics
+                if os.path.exists("temp_chart.png"):
+                    # Save permanently so it persists in chat history
+                    save_path = f"data/chart_{len(st.session_state.messages)}.png"
+                    os.makedirs("data", exist_ok=True)
+                    shutil.copy("temp_chart.png", save_path)
+                    kwargs["image_path"] = save_path
+                    os.remove("temp_chart.png")
+                    st.image(save_path)
+                
+                # Evaluate and show score
+                with st.spinner("Evaluating response..."):
+                    score = evaluate_relevance(prompt, final_response, model_name=st.session_state.get("model_name", "qwen3.5:9b"))
+                    kwargs["eval_score"] = score
+                    st.caption(f"🤖 Auto-Eval Score: {score}/5")
+
+                msg = AIMessage(content=final_response)
+                msg.additional_kwargs = kwargs
+                st.session_state.messages.append(msg)
+                
             except Exception as e:
                 st.error(f"Error communicating with agent. Make sure ollama is running. Error: {e}")

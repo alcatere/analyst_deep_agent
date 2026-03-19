@@ -4,7 +4,7 @@ from langchain_community.tools import DuckDuckGoSearchRun
 
 # Import our custom tools
 from tools.retriever_tool import read_documents
-from tools.python_tool import analyze_dataframe
+from tools.python_tool import analyze_dataframe, generate_chart
 from tools.sql_tool import execute_sql
 
 from langchain_core.tools import tool
@@ -27,7 +27,7 @@ def create_workflow(model_name: str = "qwen3.5:9b"):
     llm = ChatOllama(model=model_name, temperature=0.2)
     
     # Define available tools dynamically
-    tools = [search_web, read_documents, analyze_dataframe, execute_sql]
+    tools = [search_web, read_documents, analyze_dataframe, generate_chart, execute_sql]
     
     # Return the agent executor
     agent_executor = create_react_agent(llm, tools)

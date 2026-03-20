@@ -22,53 +22,53 @@ if "messages" not in st.session_state:
 if "agent" not in st.session_state:
     st.session_state.agent = create_workflow(model_name="qwen3.5:9b") 
 
-    with st.sidebar:
-        st.header("⚙️ Configuration")
-        model_name = st.text_input("Local Model Name (Ollama)", value="qwen3.5:9b")
-        
-        if st.button("Update Model"):
-            st.session_state.agent = create_workflow(model_name=model_name)
-            st.success(f"Agent updated to use {model_name}")
+with st.sidebar:
+    st.header("⚙️ Configuration")
+    model_name = st.text_input("Local Model Name (Ollama)", value="qwen3.5:9b")
+    
+    if st.button("Update Model"):
+        st.session_state.agent = create_workflow(model_name=model_name)
+        st.success(f"Agent updated to use {model_name}")
 
-        enable_eval = st.checkbox("Enable Auto-Evaluation (Slower)", value=False)
+    enable_eval = st.checkbox("Enable Auto-Evaluation (Slower)", value=False)
 
-        if st.button("🗑️ Clear Conversation"):
-            st.session_state.messages = []
-            st.success("Conversation cleared!")
-            st.rerun()
+    if st.button("🗑️ Clear Conversation"):
+        st.session_state.messages = []
+        st.success("Conversation cleared!")
+        st.rerun()
 
-        if "processed_files" not in st.session_state:
-            st.session_state.processed_files = set()
+    if "processed_files" not in st.session_state:
+        st.session_state.processed_files = set()
 
-        st.header("📂 Upload Knowledge")
-        uploaded_pdf = st.file_uploader("Upload a PDF document", type=["pdf"])
-        if uploaded_pdf is not None and uploaded_pdf.name not in st.session_state.processed_files:
-            with st.spinner("Indexing PDF..."):
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-                    tmp.write(uploaded_pdf.getvalue())
-                    tmp_path = tmp.name
-                
-                try:
-                    docs = load_pdf(tmp_path)
-                    chunks = split_documents(docs)
-                    add_documents_to_store(chunks)
-                    st.session_state.processed_files.add(uploaded_pdf.name)
-                    st.success(f"Successfully indexed {len(chunks)} chunks from '{uploaded_pdf.name}'.")
-                except Exception as e:
-                    st.error(f"Error processing PDF: {e}")
-                finally:
-                    os.unlink(tmp_path)
+    st.header("📂 Upload Knowledge")
+    uploaded_pdf = st.file_uploader("Upload a PDF document", type=["pdf"])
+    if uploaded_pdf is not None and uploaded_pdf.name not in st.session_state.processed_files:
+        with st.spinner("Indexing PDF..."):
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+                tmp.write(uploaded_pdf.getvalue())
+                tmp_path = tmp.name
+            
+            try:
+                docs = load_pdf(tmp_path)
+                chunks = split_documents(docs)
+                add_documents_to_store(chunks)
+                st.session_state.processed_files.add(uploaded_pdf.name)
+                st.success(f"Successfully indexed {len(chunks)} chunks from '{uploaded_pdf.name}'.")
+            except Exception as e:
+                st.error(f"Error processing PDF: {e}")
+            finally:
+                os.unlink(tmp_path)
 
-        uploaded_csv = st.file_uploader("Upload a CSV dataset", type=["csv"])
-        if uploaded_csv is not None and uploaded_csv.name not in st.session_state.processed_files:
-            with st.spinner("Loading Dataset..."):
-                try:
-                    df = pd.read_csv(uploaded_csv)
-                    add_dataframe(uploaded_csv.name, df)
-                    st.session_state.processed_files.add(uploaded_csv.name)
-                    st.success(f"Successfully loaded CSV '{uploaded_csv.name}' with {df.shape[0]} rows.")
-                except Exception as e:
-                    st.error(f"Error processing CSV: {e}")
+    uploaded_csv = st.file_uploader("Upload a CSV dataset", type=["csv"])
+    if uploaded_csv is not None and uploaded_csv.name not in st.session_state.processed_files:
+        with st.spinner("Loading Dataset..."):
+            try:
+                df = pd.read_csv(uploaded_csv)
+                add_dataframe(uploaded_csv.name, df)
+                st.session_state.processed_files.add(uploaded_csv.name)
+                st.success(f"Successfully loaded CSV '{uploaded_csv.name}' with {df.shape[0]} rows.")
+            except Exception as e:
+                st.error(f"Error processing CSV: {e}")
 
 from evaluation.metrics import evaluate_relevance
 import shutil

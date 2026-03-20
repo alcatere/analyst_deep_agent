@@ -27,13 +27,17 @@ def analyze_dataframe(query: str, filename: str) -> str:
     return f"Data summary for {filename}:\n{summary}\nNote: I can only provide summary stats right now."
 
 import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Set a professional seaborn theme
+sns.set_theme(style="whitegrid", palette="muted")
 
 @tool
 def generate_chart(filename: str, x_column: str, y_column: str, kind: str, title: str) -> str:
     """
-    Generates a chart from the dataframe to visualize data trends.
-    'kind' must be 'line', 'bar', 'scatter', or 'hist'.
-    Use this tool whenever the user asks for graphics, plots, or visual charts of the database/CSV!
+    Generates a beautiful Seaborn chart to visualize data trends.
+    'kind' must be 'line', 'bar', 'scatter', 'hist', 'boxplot', or 'violin'.
+    Use this tool whenever the user asks for graphics, plots, or visual charts of the CSV!
     """
     global uploaded_dataframes
     if filename not in uploaded_dataframes:
@@ -41,25 +45,43 @@ def generate_chart(filename: str, x_column: str, y_column: str, kind: str, title
     
     df = uploaded_dataframes[filename]
     try:
-        plt.figure(figsize=(8, 5))
+        plt.figure(figsize=(10, 6))
+        
         if kind == 'line':
-            plt.plot(df[x_column], df[y_column])
+            sns.lineplot(data=df, x=x_column, y=y_column)
         elif kind == 'bar':
-            plt.bar(df[x_column], df[y_column])
+            sns.barplot(data=df, x=x_column, y=y_column)
         elif kind == 'scatter':
-            plt.scatter(df[x_column], df[y_column])
+            sns.scatterplot(data=df, x=x_column, y=y_column)
         elif kind == 'hist':
-            plt.hist(df[x_column])
+            sns.histplot(data=df, x=x_column, kde=True)
+        elif kind == 'boxplot':
+            sns.boxplot(data=df, x=x_column, y=y_column)
+        elif kind == 'violin':
+            sns.violinplot(data=df, x=x_column, y=y_column)
         else:
             return "Error: Unsupported chart kind."
             
-        plt.title(title)
-        plt.xlabel(x_column)
-        plt.ylabel(y_column if kind != 'hist' else 'Frequency')
+        plt.title(title, fontsize=14, pad=15)
+        plt.xlabel(x_column, fontsize=12)
+        plt.ylabel(y_column if kind != 'hist' else 'Frequency', fontsize=12)
         plt.tight_layout()
-        plt.savefig('temp_chart.png')
+        plt.savefig('temp_chart.png', dpi=300)
         plt.close()
         
-        return "SUCCESS: Chart saved to temp_chart.png. Tell the user you have generated the graphic."
+        # Calculate a quick statistical context to help the LLM write a better narrative
+        context = f"Chart '{title}' saved to temp_chart.png successfully.\n"
+        context += "Here is the statistical snapshot of the plotted columns to help you write your analysis narrative:\n"
+        if df[x_column].dtype in ['int64', 'float64']:
+            context += f"- {x_column} stats: Mean={df[x_column].mean():.2f}, Max={df[x_column].max():.2f}, Min={df[x_column].min():.2f}\n"
+        if kind != 'hist' and df[y_column].dtype in ['int64', 'float64']:
+            context += f"- {y_column} stats: Mean={df[y_column].mean():.2f}, Max={df[y_column].max():.2f}, Min={df[y_column].min():.2f}\n"
+            
+        # Try to calculate correlation if both are numeric
+        if kind != 'hist' and df[x_column].dtype in ['int64', 'float64'] and df[y_column].dtype in ['int64', 'float64']:
+            corr = df[x_column].corr(df[y_column])
+            context += f"- Correlation between {x_column} and {y_column}: {corr:.2f}\n"
+
+        return context
     except Exception as e:
         return f"Error generating chart: {e}"

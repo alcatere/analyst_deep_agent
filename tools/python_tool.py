@@ -72,29 +72,42 @@ def generate_chart(filename: str, x_column: str, y_column: str, kind: str, title
     
     df = uploaded_dataframes[filename]
     try:
-        plt.figure(figsize=(10, 6))
+        # We explicitly use fig and ax objects to prevent thread-safety issues in Streamlit
+        fig, ax = plt.subplots(figsize=(10, 6))
+        
+        # Drop naive NaNs from the plotting subset to avoid empty plots
+        if kind != 'hist':
+            plot_df = df.dropna(subset=[x_column, y_column])
+        else:
+            plot_df = df.dropna(subset=[x_column])
+            
+        if plot_df.empty:
+            plt.close(fig)
+            return "Error: The columns selected contain entirely missing values and cannot be plotted."
         
         if kind == 'line':
-            sns.lineplot(data=df, x=x_column, y=y_column)
+            sns.lineplot(data=plot_df, x=x_column, y=y_column, ax=ax)
         elif kind == 'bar':
-            sns.barplot(data=df, x=x_column, y=y_column)
+            sns.barplot(data=plot_df, x=x_column, y=y_column, ax=ax)
         elif kind == 'scatter':
-            sns.scatterplot(data=df, x=x_column, y=y_column)
+            sns.scatterplot(data=plot_df, x=x_column, y=y_column, ax=ax)
         elif kind == 'hist':
-            sns.histplot(data=df, x=x_column, kde=True)
+            sns.histplot(data=plot_df, x=x_column, kde=True, ax=ax)
         elif kind == 'boxplot':
-            sns.boxplot(data=df, x=x_column, y=y_column)
+            sns.boxplot(data=plot_df, x=x_column, y=y_column, ax=ax)
         elif kind == 'violin':
-            sns.violinplot(data=df, x=x_column, y=y_column)
+            sns.violinplot(data=plot_df, x=x_column, y=y_column, ax=ax)
         else:
+            plt.close(fig)
             return "Error: Unsupported chart kind."
             
-        plt.title(title, fontsize=14, pad=15)
-        plt.xlabel(x_column, fontsize=12)
-        plt.ylabel(y_column if kind != 'hist' else 'Frequency', fontsize=12)
-        plt.tight_layout()
-        plt.savefig('temp_chart.png', dpi=300)
-        plt.close()
+        ax.set_title(title, fontsize=14, pad=15)
+        ax.set_xlabel(x_column, fontsize=12)
+        ax.set_ylabel(y_column if kind != 'hist' else 'Frequency', fontsize=12)
+        fig.tight_layout()
+        
+        fig.savefig('temp_chart.png', dpi=300)
+        plt.close(fig)
         
         # Calculate a quick statistical context to help the LLM write a better narrative
         context = f"Chart '{title}' saved to temp_chart.png successfully.\n"

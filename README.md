@@ -25,9 +25,9 @@ A local, AI-powered smart analyst application built with Python, LangGraph, and 
     ```
 
 2.  **Download the LLM**:
-    Make sure Ollama is running, then pull your preferred model (default is `qwen2.5`):
+    Make sure Ollama is running, then pull your preferred model (default is `qwen3.5:9b`):
     ```bash
-    ollama pull qwen2.5
+    ollama pull qwen3.5:9b
     ```
 
 3.  **Run the Application**:
@@ -48,3 +48,4 @@ A local, AI-powered smart analyst application built with Python, LangGraph, and 
 *   **Local LLMs**: Ollama integration
 *   **Vector Store**: ChromaDB
 *   **Data Manipulation**: Pandas
+*   **Data Visualization**: Matplotlib & Seaborn

@@ -15,8 +15,20 @@ def analyze_dataframe(query: str, filename: str) -> str:
     You must provide the user's question as 'query' and the 'filename'.
     """
     global uploaded_dataframes
+    
+    if not uploaded_dataframes:
+        return "Error: No dataframes have been uploaded by the user yet."
+
     if filename not in uploaded_dataframes:
-        return f"File '{filename}' not found. Available files: {list(uploaded_dataframes.keys())}"
+        if len(uploaded_dataframes) == 1:
+            filename = list(uploaded_dataframes.keys())[0]
+        else:
+            for k in uploaded_dataframes.keys():
+                if isinstance(filename, str) and (filename in k or k in filename):
+                    filename = k
+                    break
+            if filename not in uploaded_dataframes:
+                return f"File '{filename}' not found. Available files: {list(uploaded_dataframes.keys())}"
     
     df = uploaded_dataframes[filename]
     
@@ -26,6 +38,8 @@ def analyze_dataframe(query: str, filename: str) -> str:
     summary += f"Description:\n{df.describe().to_string()}"
     return f"Data summary for {filename}:\n{summary}\nNote: I can only provide summary stats right now."
 
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -40,8 +54,21 @@ def generate_chart(filename: str, x_column: str, y_column: str, kind: str, title
     Use this tool whenever the user asks for graphics, plots, or visual charts of the CSV!
     """
     global uploaded_dataframes
+    
+    if not uploaded_dataframes:
+        return "Error: No dataframes have been uploaded by the user yet."
+
     if filename not in uploaded_dataframes:
-        return f"File '{filename}' not found."
+        # Fuzzy match filename or auto-select if only 1 dataset exists
+        if len(uploaded_dataframes) == 1:
+            filename = list(uploaded_dataframes.keys())[0]
+        else:
+            for k in uploaded_dataframes.keys():
+                if isinstance(filename, str) and (filename in k or k in filename):
+                    filename = k
+                    break
+            if filename not in uploaded_dataframes:
+                return f"File '{filename}' not found. Available files: {list(uploaded_dataframes.keys())}"
     
     df = uploaded_dataframes[filename]
     try:
